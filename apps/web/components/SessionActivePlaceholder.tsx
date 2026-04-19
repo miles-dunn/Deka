@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { RoomState } from "@translator/shared";
+import type { ConversationTranslationDeliveredSocketPayload, RoomState } from "@translator/shared";
 import { synthesizeTranslatedVoice } from "../lib/api";
 import { useRealtimeConnection } from "../hooks/useRealtimeConnection";
 import { RealtimeDebugPanel } from "./RealtimeDebugPanel";
@@ -10,11 +10,13 @@ import { TranscriptPanel } from "./TranscriptPanel";
 interface SessionActivePlaceholderProps {
   roomState: RoomState;
   participantId: string;
+  conversationTranslations: ConversationTranslationDeliveredSocketPayload[];
+  onTranslationReady: (translatedText: string) => void;
 }
 
 type VoicePlaybackState = "idle" | "preparing" | "playing" | "ready" | "fallback_playing" | "failed";
 
-export function SessionActivePlaceholder({ roomState, participantId }: SessionActivePlaceholderProps) {
+export function SessionActivePlaceholder({ roomState, participantId, conversationTranslations, onTranslationReady }: SessionActivePlaceholderProps) {
   const realtimeSession = roomState.room.realtimeSession;
   const shellState = realtimeSession?.status ?? "not_connected";
   const pointerTurnStarted = useRef(false);
@@ -39,17 +41,28 @@ export function SessionActivePlaceholder({ roomState, participantId }: SessionAc
     }
   }, [realtimeSession?.status, realtime.connectionState, realtime.connect]);
 
+  // When our own translation is ready, send it to listeners via socket
   useEffect(() => {
     if (!latestAssistantFinal || latestAssistantFinal.id === lastSynthesizedTranscriptId.current) {
       return;
     }
-
     lastSynthesizedTranscriptId.current = latestAssistantFinal.id;
+    onTranslationReady(latestAssistantFinal.text);
+  }, [latestAssistantFinal, onTranslationReady]);
+
+  // When we receive a translation from another speaker, synthesize and play it
+  const lastReceivedTranslation = conversationTranslations[0];
+  const lastReceivedTranslationRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lastReceivedTranslation || lastReceivedTranslation.translatedText === lastReceivedTranslationRef.current) {
+      return;
+    }
+    lastReceivedTranslationRef.current = lastReceivedTranslation.translatedText;
     setVoicePlaybackState("preparing");
 
     synthesizeTranslatedVoice({
-      text: latestAssistantFinal.text,
-      speakerParticipantId: participantId
+      text: lastReceivedTranslation.translatedText,
+      speakerParticipantId: lastReceivedTranslation.speakerParticipantId
     })
       .then((response) => {
         realtime.setVoiceRouting(response.outputRouting, response.fallbackReason);
@@ -65,7 +78,7 @@ export function SessionActivePlaceholder({ roomState, participantId }: SessionAc
 
         if ("speechSynthesis" in window) {
           window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(latestAssistantFinal.text);
+          const utterance = new SpeechSynthesisUtterance(lastReceivedTranslation.translatedText);
           utterance.onstart = () => setVoicePlaybackState("fallback_playing");
           utterance.onend = () => setVoicePlaybackState("ready");
           utterance.onerror = () => setVoicePlaybackState("failed");
@@ -79,7 +92,7 @@ export function SessionActivePlaceholder({ roomState, participantId }: SessionAc
         setVoicePlaybackState("failed");
         realtime.setVoiceRouting("fallback_default", caughtError instanceof Error ? caughtError.message : "ElevenLabs playback failed");
       });
-  }, [latestAssistantFinal, participantId, realtime.setVoiceRouting]);
+  }, [lastReceivedTranslation, realtime.setVoiceRouting]);
 
   const voiceBadgeText =
     voicePlaybackState === "playing"

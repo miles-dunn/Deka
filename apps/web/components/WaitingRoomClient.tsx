@@ -36,6 +36,7 @@ export function WaitingRoomClient({ roomId, participantId }: WaitingRoomClientPr
   const hasSession = Boolean(roomId && participantId);
   const {
     connected,
+    conversationTranslations,
     error,
     events,
     leaveCurrentRoom,
@@ -48,7 +49,8 @@ export function WaitingRoomClient({ roomId, participantId }: WaitingRoomClientPr
     approveSpeakRequest,
     denySpeakRequest,
     releaseFloor,
-    submitSpeakerTurn
+    submitSpeakerTurn,
+    submitConversationTranslation
   } = useRoomSocket({
     roomId,
     participantId,
@@ -202,7 +204,12 @@ export function WaitingRoomClient({ roomId, participantId }: WaitingRoomClientPr
                   onSpeakerTurnSubmitted={submitSpeakerTurn}
                 />
               ) : (
-                <SessionActivePlaceholder roomState={roomState} participantId={participantId} />
+                <SessionActivePlaceholder
+                  roomState={roomState}
+                  participantId={participantId}
+                  conversationTranslations={conversationTranslations}
+                  onTranslationReady={submitConversationTranslation}
+                />
               )
             ) : null}
             <RoomStatusPanel roomState={roomState} connected={connected} />

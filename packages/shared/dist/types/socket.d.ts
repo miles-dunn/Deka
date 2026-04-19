@@ -92,6 +92,16 @@ export interface PresentationTranslationsDeliveredSocketPayload {
     speakerParticipantId: string;
     deliveries: PresentationTranslationDelivery[];
 }
+export interface ConversationTranslationSubmittedSocketPayload {
+    roomId: string;
+    speakerParticipantId: string;
+    translatedText: string;
+}
+export interface ConversationTranslationDeliveredSocketPayload {
+    roomId: string;
+    speakerParticipantId: string;
+    translatedText: string;
+}
 export interface ClientToServerEvents {
     "room:join": (payload: RoomJoinSocketPayload) => void;
     "room:leave": (payload: RoomLeaveSocketPayload) => void;
@@ -102,6 +112,7 @@ export interface ClientToServerEvents {
     "presentation:deny-request": (payload: PresentationModerationSocketPayload) => void;
     "presentation:release-floor": (payload: PresentationReleaseFloorSocketPayload) => void;
     "presentation:speaker-turn-submitted": (payload: PresentationSpeakerTurnSocketPayload) => void;
+    "conversation:translation-submitted": (payload: ConversationTranslationSubmittedSocketPayload) => void;
 }
 export interface ServerToClientEvents {
     "room:joined": (payload: RoomJoinedSocketPayload) => void;
@@ -117,5 +128,6 @@ export interface ServerToClientEvents {
     "presentation:speak-request-approved": (payload: PresentationSpeakRequestResolvedSocketPayload) => void;
     "presentation:speak-request-denied": (payload: PresentationSpeakRequestResolvedSocketPayload) => void;
     "presentation:translations-delivered": (payload: PresentationTranslationsDeliveredSocketPayload) => void;
+    "conversation:translation-delivered": (payload: ConversationTranslationDeliveredSocketPayload) => void;
     "error": (payload: SocketErrorPayload) => void;
 }

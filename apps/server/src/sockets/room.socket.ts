@@ -189,6 +189,14 @@ export const registerRoomSockets = (io: AppSocketServer) => {
       }
     });
 
+    socket.on("conversation:translation-submitted", (payload) => {
+      socket.to(payload.roomId).emit("conversation:translation-delivered", {
+        roomId: payload.roomId,
+        speakerParticipantId: payload.speakerParticipantId,
+        translatedText: payload.translatedText
+      });
+    });
+
     socket.on("disconnect", () => {
       const roomState = disconnectParticipantSocket(socket.id);
 

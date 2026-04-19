@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ClientToServerEvents,
+  ConversationTranslationDeliveredSocketPayload,
   PresentationTranslationDelivery,
   RoomState,
   ServerToClientEvents
@@ -20,6 +21,7 @@ export const useRoomSocket = ({ roomId, participantId, enabled }: UseRoomSocketP
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [events, setEvents] = useState<string[]>([]);
   const [presentationTranslations, setPresentationTranslations] = useState<PresentationTranslationDelivery[]>([]);
+  const [conversationTranslations, setConversationTranslations] = useState<ConversationTranslationDeliveredSocketPayload[]>([]);
   const [lastDeniedSpeakRequestParticipantId, setLastDeniedSpeakRequestParticipantId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -106,6 +108,10 @@ export const useRoomSocket = ({ roomId, participantId, enabled }: UseRoomSocketP
       });
     });
 
+    socket.on("conversation:translation-delivered", (payload) => {
+      setConversationTranslations((current) => [payload, ...current].slice(0, 20));
+    });
+
     socket.on("session:start-failed", (payload) => {
       setError(payload.message);
       setEvents((current) => [`Start failed: ${payload.message}`, ...current]);
@@ -176,8 +182,20 @@ export const useRoomSocket = ({ roomId, participantId, enabled }: UseRoomSocketP
     setRoomState(nextRoomState);
   }, []);
 
+  const submitConversationTranslation = useCallback(
+    (translatedText: string) => {
+      socketRef.current?.emit("conversation:translation-submitted", {
+        roomId,
+        speakerParticipantId: participantId,
+        translatedText
+      });
+    },
+    [participantId, roomId]
+  );
+
   return {
     connected,
+    conversationTranslations,
     error,
     events,
     leaveCurrentRoom,
@@ -190,6 +208,7 @@ export const useRoomSocket = ({ roomId, participantId, enabled }: UseRoomSocketP
     denySpeakRequest,
     releaseFloor,
     submitSpeakerTurn,
+    submitConversationTranslation,
     updateRoomState
   };
 };
