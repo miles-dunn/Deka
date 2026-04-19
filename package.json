@@ -1,0 +1,21 @@
+{
+  "name": "translator-ai",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @translator/shared && npm run build --workspace @translator/server && npm run build --workspace @translator/web",
+    "dev:server": "npm run build --workspace @translator/shared && npm run dev --workspace @translator/server",
+    "dev:web": "npm run build --workspace @translator/shared && cd apps/web && npm run dev",
+    "typecheck": "npm run typecheck --workspace @translator/server && npm run typecheck --workspace @translator/web"
+  },
+  "dependencies": {
+    "firebase": "^12.12.0"
+  },
+  "devDependencies": {
+    "@esbuild/win32-x64": "^0.27.7"
+  }
+}
