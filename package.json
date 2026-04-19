@@ -15,7 +15,5 @@
   "dependencies": {
     "firebase": "^12.12.0"
   },
-  "devDependencies": {
-    "@esbuild/win32-x64": "^0.27.7"
-  }
+  "devDependencies": {}
 }
